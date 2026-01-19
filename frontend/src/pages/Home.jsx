@@ -1,9 +1,11 @@
 import React from 'react'
 import HeroSection from '../components/Home Components/HeroSection'
+import Navbar from '../components/Navbar'
 
 const Home = () => {
   return (
-    <div>
+    <div className='relative bg-black'>
+      <Navbar />
       <HeroSection />
     </div>
   )
