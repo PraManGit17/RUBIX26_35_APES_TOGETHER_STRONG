@@ -27,3 +27,17 @@
   font-weight: 500;
   font-style: normal;
 }
+
+
+/* @keyframes scanline {
+  0% { transform: translateY(0); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(500px); opacity: 0; }
+}
+
+.animate-scanline {
+  animation: scanline 4s linear infinite;
+}
+
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Poppins:wght@300;400;600&display=swap'); */
