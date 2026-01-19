@@ -27,17 +27,18 @@ export default function Navbar() {
       `}
     >
 
-      <div className='relative flex items-center justify-between w-[50%]'>
+      <div className='relative flex items-center justify-between w-[55%]'>
         <Link to='/' className='flex gap-3 relative'>
           <img src="/logos/gamma.png" className='absolute top-0 left-8 z-0 w-12 h-12 scale-130 rotate-10 opacity-35' />
           <div className='relative z-10 text-3xl text-white font-bold syne'>gamma</div>
         </Link>
 
         <div className='urbanist text-md flex items-center gap-12 pt-2 text-white'>
-          <Link to='/' className='hover:cursor-pointer'>Career</Link>
-          <Link to='/' className='hover:cursor-pointer'>Portfolio</Link>
-          <Link to='/' className='hover:cursor-pointer'>Interview</Link>
-          <Link to='/' className='hover:cursor-pointer'>Resume</Link>
+          <Link to='/' className='hover:cursor-pointer'>Overview</Link>
+          <Link to='/' className='hover:cursor-pointer'>Insights</Link>
+          <Link to='/' className='hover:cursor-pointer'>Sentiments</Link>
+          <Link to='/' className='hover:cursor-pointer'>Backtest</Link>
+          <Link to='/' className='hover:cursor-pointer'>Copilot</Link>
         </div>
       </div>
 
