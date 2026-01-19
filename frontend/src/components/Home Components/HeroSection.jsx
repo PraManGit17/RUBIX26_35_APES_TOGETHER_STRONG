@@ -80,19 +80,12 @@ const HeroSection = () => {
           ref={textRef}
           className='syne text-5xl max-w-[1200px] text-center mt-55 flex items-center gap-2'>
           <span>Because Investing Shouldn't Feel Like</span>
-
-          {/* <span className='bg-gradient-to-r from-green-900 via-green-700 rounded-xs  to-black text-white px-1'>
-            Gambling
-          </span> */}
-
           <span className="relative inline-block px-1 overflow-hidden rounded-xs">
-            {/* animated background */}
             <span
               ref={bgRef}
-              className="absolute inset-0 bg-gradient-to-r from-green-900 via-green-700 to-black"
+              className="absolute inset-0 bg-gradient-to-r from-green-700 via-green-600 to-black"
             />
 
-            {/* text */}
             <span className="relative z-10 text-white">
               Gambling
             </span>
@@ -114,7 +107,7 @@ const HeroSection = () => {
 
         <div
           ref={buttonRef}
-          className='flex items-center justify-between w-[24%] py-2 mt-12 text-lg  mr-20'>
+          className='flex items-center justify-between w-[24%] py-2 mt-12 text-lg  mr-15'>
 
           <button className='urbanist-semibold bg-white rounded-md w-35 px-5 py-2 text-black'>Use Copilot</button>
           <button className='urbanist  border-white w-35 text-white'>
