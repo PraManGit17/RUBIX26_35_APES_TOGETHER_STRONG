@@ -69,8 +69,6 @@ const HeroSection = () => {
 
   }, []);
 
-
-
   return (
     <div className='relative z-10  h-screen w-full flex justify-center items-center overflow-hidden '>
 

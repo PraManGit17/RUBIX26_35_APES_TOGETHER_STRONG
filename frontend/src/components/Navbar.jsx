@@ -35,7 +35,7 @@ export default function Navbar() {
 
         <div className='urbanist text-md flex items-center gap-12 pt-2 text-white'>
           <Link to='/' className='hover:cursor-pointer'>Overview</Link>
-          <Link to='/' className='hover:cursor-pointer'>Predictions</Link>
+          <Link to='/predictions' className='hover:cursor-pointer'>Predictions</Link>
           <Link to='/' className='hover:cursor-pointer'>Sentiments</Link>
           <Link to='/' className='hover:cursor-pointer'>Backtest</Link>
           <Link to='/' className='hover:cursor-pointer'>Copilot</Link>
