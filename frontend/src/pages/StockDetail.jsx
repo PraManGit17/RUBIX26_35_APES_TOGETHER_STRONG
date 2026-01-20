@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTrade, STOCK_MARKET } from '../context/TradeContext';
 import { X, TrendingUp, TrendingDown, ShoppingCart, DollarSign, AlertCircle, ArrowLeft } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart , ComposedChart , Bar,  Cell } from 'recharts';
 import Confetti from 'react-dom-confetti';
+
+import Candlestick from '../components/Candlestick';
 
 const StockDetail = () => {
   const navigate = useNavigate();
@@ -27,6 +29,33 @@ const StockDetail = () => {
   const selectedHolding = holdings.find(h => h.symbol === symbol);
   const totalCost = quantity * (simulatedPrice || 0);
 
+//   useEffect(() => {
+//   const history = [];
+//   // Use the current price as the starting point
+//   let prevClose = (simulatedPrice || STOCK_MARKET[symbol]?.price || 1000);
+  
+//   for (let i = 0; i < 30; i++) {
+//     const open = prevClose;
+//     const close = open + (Math.random() - 0.5) * 40; // Random movement
+//     const high = Math.max(open, close) + Math.random() * 10;
+//     const low = Math.min(open, close) - Math.random() * 10;
+    
+//     history.push({
+//       time: `${i * 5}m`,
+//       open, 
+//       high, 
+//       low, 
+//       close,
+//       // Recharts uses the 'body' array to determine the bar's top and bottom
+//       body: [open, close] 
+//     });
+//     prevClose = close;
+//   }
+//   setPriceHistory(history);
+// }, [symbol]);
+
+  
+
   // Initialize stock data
   useEffect(() => {
     if (STOCK_MARKET[symbol]) {
@@ -49,20 +78,79 @@ const StockDetail = () => {
   }, []);
 
   // Generate price history
-  useEffect(() => {
-    const history = [];
-    let price = (simulatedPrice || STOCK_MARKET[symbol]?.price || 1000) * 0.95;
+  // useEffect(() => {
+  //   const history = [];
+  //   let price = (simulatedPrice || STOCK_MARKET[symbol]?.price || 1000) * 0.95;
     
-    for (let i = 0; i < 20; i++) {
-      price += (Math.random() - 0.5) * 10;
+  //   for (let i = 0; i < 20; i++) {
+  //     price += (Math.random() - 0.5) * 10;
+  //     history.push({
+  //       time: `${i * 5}m`,
+  //       price: Math.max(100, price),
+  //     });
+  //   }
+    
+  //   setPriceHistory(history);
+  // }, [symbol, simulatedPrice]);
+
+  // Unified Candle History Logic
+  useEffect(() => {
+    if (!symbol) return;
+
+    const history = [];
+    // Use simulatedPrice as a base, or fallback to the static market price
+    let prevClose = simulatedPrice || STOCK_MARKET[symbol]?.price || 1000;
+    
+    // Generate 30 initial candles
+    for (let i = 0; i < 30; i++) {
+      const open = prevClose;
+      const close = open + (Math.random() - 0.5) * 40; 
+      const high = Math.max(open, close) + Math.random() * 10;
+      const low = Math.min(open, close) - Math.random() * 10;
+      
       history.push({
         time: `${i * 5}m`,
-        price: Math.max(100, price),
+        open, 
+        high, 
+        low, 
+        close,
+        body: [open, close] // Required for the Candlestick Bar
       });
+      prevClose = close;
     }
-    
     setPriceHistory(history);
-  }, [symbol, simulatedPrice]);
+    // We only want this to run once when the symbol changes
+  }, [symbol]);
+
+// Simulate live updates
+useEffect(() => {
+  const interval = setInterval(() => {
+    setSimulatedPrice(prev => {
+      const change = (Math.random() - 0.5) * 10;
+      const newPrice = Math.max(100, prev + change);
+
+      // Update the most recent candle in history to match the live price
+      setPriceHistory(prevHistory => {
+        if (prevHistory.length === 0) return prevHistory;
+        const newHistory = [...prevHistory];
+        const lastIndex = newHistory.length - 1;
+        const lastCandle = { ...newHistory[lastIndex] };
+        
+        lastCandle.close = newPrice;
+        lastCandle.high = Math.max(lastCandle.high, newPrice);
+        lastCandle.low = Math.min(lastCandle.low, newPrice);
+        lastCandle.body = [lastCandle.open, newPrice];
+        
+        newHistory[lastIndex] = lastCandle;
+        return newHistory;
+      });
+
+      return newPrice;
+    });
+  }, 2000);
+
+  return () => clearInterval(interval);
+}, []);
 
   // Handle rate limit cooldown
   useEffect(() => {
@@ -205,7 +293,7 @@ const StockDetail = () => {
           </div>
 
           {/* Price Chart */}
-          <div className="bg-[#0D0D0D] border border-[#262626] p-6 rounded-xl mb-8">
+          {/* <div className="bg-[#0D0D0D] border border-[#262626] p-6 rounded-xl mb-8">
             <h3 className="text-lg font-bold mb-4 text-white">Price Movement (Last 100 mins)</h3>
             <ResponsiveContainer width="100%" height={350}>
               <AreaChart data={priceHistory}>
@@ -229,7 +317,52 @@ const StockDetail = () => {
                 <Area type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+          </div> */}
+
+          <div className="bg-[#0D0D0D] border border-[#262626] p-6 rounded-xl mb-8">
+  <h3 className="text-lg font-bold mb-4 text-white">Live Technical Chart</h3>
+  <ResponsiveContainer width="100%" height={350}>
+    <ComposedChart data={priceHistory}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#1A1A1A" vertical={false} />
+      <XAxis dataKey="time" stroke="#666" tick={{fontSize: 12}} />
+      <YAxis 
+        domain={['dataMin - 20', 'dataMax + 20']} 
+        orientation="right" 
+        stroke="#666" 
+        tick={{fontSize: 12}}
+        tickFormatter={(val) => `₹${val.toFixed(0)}`}
+      />
+      <Tooltip 
+        content={({ active, payload }) => {
+          if (active && payload && payload.length) {
+            const d = payload[0].payload;
+            return (
+              <div className="bg-[#0D0D0D] border border-[#333] p-3 rounded shadow-2xl text-[10px] font-mono">
+                <p className="text-green-400">O: {d.open.toFixed(2)}</p>
+                <p className="text-white">H: {d.high.toFixed(2)}</p>
+                <p className="text-white">L: {d.low.toFixed(2)}</p>
+                <p className="text-red-400">C: {d.close.toFixed(2)}</p>
+              </div>
+            );
+          }
+          return null;
+        }}
+      />
+      <Bar 
+        dataKey="body" 
+        shape={<Candlestick />}
+        isAnimationActive={false}
+      >
+        {priceHistory.map((entry, index) => (
+          <Cell 
+            key={`cell-${index}`} 
+            fill={entry.close > entry.open ? '#22c55e' : '#ef4444'} 
+          />
+        ))}
+      </Bar>
+    </ComposedChart>
+  </ResponsiveContainer>
+      </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Trading Panel */}

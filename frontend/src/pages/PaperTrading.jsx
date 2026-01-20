@@ -217,7 +217,6 @@ const PaperTrading = () => {
                   <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2 font-['Outfit']">Cash Balance</p>
                   <p className="text-2xl font-mono font-bold text-green-400">₹{balance.toLocaleString('en-IN', {maximumFractionDigits: 0})}</p>
                 </div>
-                <div className="text-green-400/20 text-4xl">💰</div>
               </div>
             </div>
 
@@ -227,7 +226,6 @@ const PaperTrading = () => {
                   <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2 font-['Outfit']">Portfolio Value</p>
                   <p className="text-2xl font-mono font-bold text-blue-400">₹{getPortfolioValue().toLocaleString('en-IN', {maximumFractionDigits: 0})}</p>
                 </div>
-                <div className="text-blue-400/20 text-4xl">📊</div>
               </div>
             </div>
 
@@ -239,7 +237,6 @@ const PaperTrading = () => {
                     {getTotalPnL() >= 0 ? '+' : ''}₹{getTotalPnL().toLocaleString('en-IN', {maximumFractionDigits: 0})}
                   </p>
                 </div>
-                <div className={`text-4xl ${getTotalPnL() >= 0 ? 'text-emerald-400/20' : 'text-red-400/20'}`}>{getTotalPnL() >= 0 ? '📈' : '📉'}</div>
               </div>
             </div>
 
@@ -249,7 +246,6 @@ const PaperTrading = () => {
                   <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-2 font-['Outfit']">Holdings</p>
                   <p className="text-2xl font-mono font-bold text-yellow-400">{holdings.length}</p>
                 </div>
-                <div className="text-yellow-400/20 text-4xl">🎯</div>
               </div>
             </div>
           </div>

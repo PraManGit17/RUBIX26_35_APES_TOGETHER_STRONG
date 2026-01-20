@@ -40,6 +40,8 @@ export default function Navbar() {
           <Link to='/chart' className='hover:cursor-pointer'>Compare</Link>
           <Link to='/calculator' className='hover:cursor-pointer'>Calculator</Link>
           <Link to='/paper-trading' className='hover:cursor-pointer'>Trading</Link>
+          <Link to='/news' className='hover:cursor-pointer'>News</Link>
+
         </div>
       </div>
 

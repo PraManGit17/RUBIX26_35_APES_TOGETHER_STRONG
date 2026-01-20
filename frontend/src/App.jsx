@@ -11,6 +11,7 @@ import PaperTrading from './pages/PaperTrading';
 import Portfolio from './pages/Portfolio';
 import TradeHistory from './pages/TradeHistory';
 import StockDetail from './pages/StockDetail';
+import NewsPage from './pages/NewsPage';
 
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
       <Route path="/portfolio" element={<Portfolio />} />
       <Route path="/trade-history" element={<TradeHistory />} />
       <Route path="/stock/:symbol" element={<StockDetail />} />
+      <Route path='/news' element={<NewsPage/>}/>
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
