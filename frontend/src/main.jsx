@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom';
 import { TradeProvider } from './context/TradeContext.jsx';
+import { WatchlistProvider } from './context/WatchlistContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   // <StrictMode>
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')).render(
 
   <BrowserRouter>
     <TradeProvider>
-      <App />
+      <WatchlistProvider>
+        <App />
+      </WatchlistProvider>
     </TradeProvider>
   </BrowserRouter>
 )

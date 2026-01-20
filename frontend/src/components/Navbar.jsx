@@ -35,24 +35,20 @@ export default function Navbar() {
 
         <div className='urbanist text-md flex items-center gap-12 pt-2 text-white'>
           <Link to='/' className='hover:cursor-pointer'>Overview</Link>
-          <Link to='/' className='hover:cursor-pointer'>Predictions</Link>
+          <Link to='/predictions' className='hover:cursor-pointer'>Predictions</Link>
           <Link to='/' className='hover:cursor-pointer'>Sentiments</Link>
           <Link to='/chart' className='hover:cursor-pointer'>Compare</Link>
           <Link to='/calculator' className='hover:cursor-pointer'>Calculator</Link>
           <Link to='/paper-trading' className='hover:cursor-pointer'>Trading</Link>
           <Link to='/news' className='hover:cursor-pointer'>News</Link>
+          <Link to='/markets' className='hover:cursor-pointer'>Market</Link>
+          <Link to='/watchlist' className='hover:cursor-pointer'>WatchList</Link>
+
 
         </div>
       </div>
 
-      <div className='flex items-center gap-10 pt-2 text-md text-white'>
-        <button className='urbanist'>Extension</button>
-        <button className='urbanist'>Sign in</button>
-        <button className='flex items-center  justify-between urbanist-semibold bg-white rounded-md w-35 px-3 py-1.5  text-black'>
-          Get Started
-          <MoveRight className='w-5 h-5 mt-0.5' />
-        </button>
-      </div>
+
     </div>
   )
 }

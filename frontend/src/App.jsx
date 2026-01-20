@@ -12,12 +12,16 @@ import Portfolio from './pages/Portfolio';
 import TradeHistory from './pages/TradeHistory';
 import StockDetail from './pages/StockDetail';
 import NewsPage from './pages/NewsPage';
+import WatchlistPage from './pages/WatchlistPage';
+import MarketPage from './pages/MarketPage';
+import Prediction from './pages/Prediction';
 
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/predictions" element={<Prediction/>} />
       <Route path="/bot" element={<Chatbot />} />
       <Route path='/chart' element={<StockChart/>}/>
       <Route path='/calculator' element={<CalculatorPage/>}/>
@@ -29,6 +33,8 @@ function App() {
       <Route path="/trade-history" element={<TradeHistory />} />
       <Route path="/stock/:symbol" element={<StockDetail />} />
       <Route path='/news' element={<NewsPage/>}/>
+      <Route path='/watchlist' element={<WatchlistPage/>} />
+      <Route path='/markets' element={<MarketPage/>}/>
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
