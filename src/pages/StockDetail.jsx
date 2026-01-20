@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTrade, STOCK_MARKET } from '../context/TradeContext';
-import { X, TrendingUp, TrendingDown, ShoppingCart, DollarSign, AlertCircle, ArrowLeft } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart , ComposedChart , Bar,  Cell } from 'recharts';
+import { useTrade } from '../context/TradeContext';
+import { X, TrendingUp, TrendingDown, ShoppingCart, DollarSign, AlertCircle, ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ComposedChart, Bar, Cell } from 'recharts';
 import Confetti from 'react-dom-confetti';
-
 import Candlestick from '../components/Candlestick';
+
+const API_BASE_URL = 'http://localhost:5000/api/v1';
 
 const StockDetail = () => {
   const navigate = useNavigate();
   const { symbol } = useParams();
-  const { balance, holdings, buyStock, sellStock } = useTrade();
+  const { balance, holdings, buyStock, sellStock, stockData } = useTrade();
   
   const [stock, setStock] = useState(null);
   const [action, setAction] = useState('BUY');
@@ -20,137 +21,85 @@ const StockDetail = () => {
   const [messageType, setMessageType] = useState('');
   const [priceHistory, setPriceHistory] = useState([]);
   const [confirmedAction, setConfirmedAction] = useState(null);
-  const [simulatedPrice, setSimulatedPrice] = useState(null);
+  const [currentPrice, setCurrentPrice] = useState(null);
   const [lastTradeTime, setLastTradeTime] = useState(null);
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [timeframe, setTimeframe] = useState('1d');
+  const [interval, setInterval] = useState('5m');
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
-  const RATE_LIMIT_MS = 2000; // 2 seconds between trades
+  const RATE_LIMIT_MS = 2000;
   const selectedHolding = holdings.find(h => h.symbol === symbol);
-  const totalCost = quantity * (simulatedPrice || 0);
+  const totalCost = quantity * (currentPrice || 0);
 
-//   useEffect(() => {
-//   const history = [];
-//   // Use the current price as the starting point
-//   let prevClose = (simulatedPrice || STOCK_MARKET[symbol]?.price || 1000);
-  
-//   for (let i = 0; i < 30; i++) {
-//     const open = prevClose;
-//     const close = open + (Math.random() - 0.5) * 40; // Random movement
-//     const high = Math.max(open, close) + Math.random() * 10;
-//     const low = Math.min(open, close) - Math.random() * 10;
-    
-//     history.push({
-//       time: `${i * 5}m`,
-//       open, 
-//       high, 
-//       low, 
-//       close,
-//       // Recharts uses the 'body' array to determine the bar's top and bottom
-//       body: [open, close] 
-//     });
-//     prevClose = close;
-//   }
-//   setPriceHistory(history);
-// }, [symbol]);
-
-  
+  // Fetch historical data
+  const fetchHistoricalData = async (period = '1d', int = '5m') => {
+    try {
+      setLoadingHistory(true);
+      const response = await fetch(`${API_BASE_URL}/markets/history/${symbol}?period=${period}&interval=${int}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform to candlestick format
+        const candles = data.candles.map(candle => ({
+          time: new Date(candle.timestamp).toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          timestamp: candle.timestamp,
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close,
+          volume: candle.volume,
+          body: [candle.open, candle.close]
+        }));
+        
+        setPriceHistory(candles);
+        if (candles.length > 0) {
+          setCurrentPrice(candles[candles.length - 1].close);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching historical data:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   // Initialize stock data
   useEffect(() => {
-    if (STOCK_MARKET[symbol]) {
-      setStock(STOCK_MARKET[symbol]);
-      setSimulatedPrice(STOCK_MARKET[symbol].price);
+    if (stockData[symbol]) {
+      setStock(stockData[symbol]);
+      setCurrentPrice(stockData[symbol].price);
     }
-  }, [symbol]);
+  }, [symbol, stockData]);
 
-  // Simulate price fluctuations
+  // Fetch historical data on mount and when timeframe changes
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSimulatedPrice(prev => {
-        const change = (Math.random() - 0.5) * 50;
-        const newPrice = Math.max(100, prev + change);
-        return newPrice;
-      });
-    }, 2000);
+    fetchHistoricalData(timeframe, interval);
+  }, [symbol, timeframe, interval]);
 
-    return () => clearInterval(interval);
-  }, []);
-
-  // Generate price history
-  // useEffect(() => {
-  //   const history = [];
-  //   let price = (simulatedPrice || STOCK_MARKET[symbol]?.price || 1000) * 0.95;
-    
-  //   for (let i = 0; i < 20; i++) {
-  //     price += (Math.random() - 0.5) * 10;
-  //     history.push({
-  //       time: `${i * 5}m`,
-  //       price: Math.max(100, price),
-  //     });
-  //   }
-    
-  //   setPriceHistory(history);
-  // }, [symbol, simulatedPrice]);
-
-  // Unified Candle History Logic
+  // Update current price from stockData
   useEffect(() => {
-    if (!symbol) return;
-
-    const history = [];
-    // Use simulatedPrice as a base, or fallback to the static market price
-    let prevClose = simulatedPrice || STOCK_MARKET[symbol]?.price || 1000;
-    
-    // Generate 30 initial candles
-    for (let i = 0; i < 30; i++) {
-      const open = prevClose;
-      const close = open + (Math.random() - 0.5) * 40; 
-      const high = Math.max(open, close) + Math.random() * 10;
-      const low = Math.min(open, close) - Math.random() * 10;
+    if (stockData[symbol]) {
+      setCurrentPrice(stockData[symbol].price);
       
-      history.push({
-        time: `${i * 5}m`,
-        open, 
-        high, 
-        low, 
-        close,
-        body: [open, close] // Required for the Candlestick Bar
-      });
-      prevClose = close;
-    }
-    setPriceHistory(history);
-    // We only want this to run once when the symbol changes
-  }, [symbol]);
-
-// Simulate live updates
-useEffect(() => {
-  const interval = setInterval(() => {
-    setSimulatedPrice(prev => {
-      const change = (Math.random() - 0.5) * 10;
-      const newPrice = Math.max(100, prev + change);
-
-      // Update the most recent candle in history to match the live price
-      setPriceHistory(prevHistory => {
-        if (prevHistory.length === 0) return prevHistory;
-        const newHistory = [...prevHistory];
-        const lastIndex = newHistory.length - 1;
-        const lastCandle = { ...newHistory[lastIndex] };
-        
-        lastCandle.close = newPrice;
-        lastCandle.high = Math.max(lastCandle.high, newPrice);
-        lastCandle.low = Math.min(lastCandle.low, newPrice);
-        lastCandle.body = [lastCandle.open, newPrice];
-        
-        newHistory[lastIndex] = lastCandle;
+      // Update the last candle with live price
+      setPriceHistory(prev => {
+        if (prev.length === 0) return prev;
+        const newHistory = [...prev];
+        const lastCandle = { ...newHistory[newHistory.length - 1] };
+        lastCandle.close = stockData[symbol].price;
+        lastCandle.high = Math.max(lastCandle.high, stockData[symbol].price);
+        lastCandle.low = Math.min(lastCandle.low, stockData[symbol].price);
+        lastCandle.body = [lastCandle.open, stockData[symbol].price];
+        newHistory[newHistory.length - 1] = lastCandle;
         return newHistory;
       });
-
-      return newPrice;
-    });
-  }, 2000);
-
-  return () => clearInterval(interval);
-}, []);
+    }
+  }, [stockData, symbol]);
 
   // Handle rate limit cooldown
   useEffect(() => {
@@ -172,7 +121,8 @@ useEffect(() => {
   }, [isRateLimited, lastTradeTime]);
 
   const handleAction = () => {
-    // Check rate limiting
+    if (!currentPrice) return;
+
     if (isRateLimited) {
       setMessageType('error');
       setMessage(`⏱️ Please wait ${cooldownSeconds}s before the next trade`);
@@ -183,7 +133,7 @@ useEffect(() => {
     let result;
     
     if (action === 'BUY') {
-      result = buyStock(symbol, quantity, simulatedPrice);
+      result = buyStock(symbol, quantity, currentPrice);
     } else {
       result = sellStock(symbol, quantity);
     }
@@ -199,19 +149,10 @@ useEffect(() => {
       setShowConfetti(true);
       setQuantity(1);
       
-      // Save to localStorage
-      localStorage.setItem('lastTradeAction', JSON.stringify({
-        symbol,
-        action,
-        quantity,
-        price: simulatedPrice,
-        timestamp: new Date().toISOString()
-      }));
-      
       setTimeout(() => {
         setShowConfetti(false);
         setMessage('');
-      }, 2500);
+      }, 3000);
     } else {
       setMessageType('error');
       setMessage(result.message);
@@ -219,6 +160,29 @@ useEffect(() => {
       setTimeout(() => setMessage(''), 3000);
     }
   };
+
+  const handleTimeframeChange = (newTimeframe) => {
+    setTimeframe(newTimeframe);
+    
+    // Set appropriate interval based on timeframe
+    const intervalMap = {
+      '1d': '5m',
+      '5d': '15m',
+      '1mo': '1d',
+      '3mo': '1d',
+      '6mo': '1wk',
+      '1y': '1wk',
+    };
+    setInterval(intervalMap[newTimeframe] || '1d');
+  };
+
+  if (!stock || !currentPrice) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center">
+        <Loader2 className="animate-spin text-cyan-400" size={48} />
+      </div>
+    );
+  }
 
   const confettiConfig = {
     angle: 90,
@@ -234,330 +198,280 @@ useEffect(() => {
     colors: ['#a864fd', '#29cdff', '#78ff44', '#ff718d', '#fdff6e']
   };
 
-  if (!stock || !simulatedPrice) {
+  const priceChange = currentPrice - stock.open;
+  const priceChangePercent = ((priceChange / stock.open) * 100).toFixed(2);
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-white p-6 lg:p-10 font-['Outfit']">
+      <Confetti active={showConfetti} config={confirmedAction === 'buy' ? confettiConfig : {...confettiConfig, stagger: 10}} />
+      
+      <div className="max-w-[1600px] mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={() => navigate('/paper-trading')}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <ArrowLeft size={24} />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-4xl font-black tracking-tighter">{stock.symbol}</h1>
+            <p className="text-gray-500 text-sm mt-1">{stock.name}</p>
+          </div>
+          <button
+            onClick={() => fetchHistoricalData(timeframe, interval)}
+            disabled={loadingHistory}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <RefreshCw size={18} className={loadingHistory ? 'animate-spin' : ''} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Chart Section */}
+          <div className="lg:col-span-2">
+            {/* Price Info */}
+            <div className="bg-[#0D0D0D] border border-[#1A1A1A] rounded-2xl p-6 mb-6">
+              <div className="flex items-end justify-between mb-4">
+                <div>
+                  <p className="text-5xl font-mono font-black">₹{currentPrice.toFixed(2)}</p>
+                  <p className={`text-lg font-mono mt-2 ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {priceChange >= 0 ? '▲' : '▼'} {Math.abs(priceChange).toFixed(2)} ({priceChangePercent}%)
+                  </p>
+                </div>
+                <div className="text-right text-sm text-gray-500">
+                  <p>High: ₹{stock.high.toFixed(2)}</p>
+                  <p>Low: ₹{stock.low.toFixed(2)}</p>
+                  <p>Volume: {(stock.volume / 1000000).toFixed(2)}M</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Timeframe Buttons */}
+            <div className="flex gap-2 mb-4">
+              {['1d', '5d', '1mo', '3mo', '6mo', '1y'].map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => handleTimeframeChange(tf)}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                    timeframe === tf
+                      ? 'bg-cyan-500 text-black'
+                      : 'bg-[#0D0D0D] border border-[#1A1A1A] text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {tf.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            {/* Candlestick Chart */}
+            <div className="bg-[#0D0D0D] border border-[#1A1A1A] rounded-2xl p-6">
+              <h3 className="text-lg font-bold mb-4">Price Chart</h3>
+              {loadingHistory ? (
+                <div className="flex items-center justify-center h-96">
+                  <Loader2 className="animate-spin text-cyan-400" size={48} />
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={400}>
+                  <ComposedChart data={priceHistory}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1A1A1A" />
+                    <XAxis 
+                      dataKey="time" 
+                      stroke="#666" 
+                      tick={{ fontSize: 10 }}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis 
+                      stroke="#666" 
+                      tick={{ fontSize: 10 }}
+                      domain={['dataMin - 10', 'dataMax + 10']}
+                    />
+                    <Tooltip 
+  contentStyle={{ 
+    backgroundColor: '#0D0D0D', 
+    border: '1px solid #1A1A1A',
+    borderRadius: '8px'
+  }}
+  formatter={(value, name, props) => {
+    // Handle array values (body field)
+    if (Array.isArray(value)) {
+      return null; // Don't show the body field
+    }
+    // Handle numeric values
+    if (typeof value === 'number') {
+      return `₹${value.toFixed(2)}`;
+    }
+    return value;
+  }}
+  labelFormatter={(label) => `Time: ${label}`}
+  content={({ active, payload }) => {
+    if (!active || !payload || !payload.length) return null;
+    
+    const data = payload[0].payload;
+    
     return (
-      <div className="min-h-screen bg-[#050505] text-white font-['Outfit'] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-400">Loading stock data...</p>
+      <div className="bg-[#0D0D0D] border border-[#1A1A1A] rounded-lg p-3">
+        <p className="text-xs text-gray-400 mb-2">{data.time}</p>
+        <div className="space-y-1 text-xs">
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-500">Open:</span>
+            <span className="font-mono text-white">₹{data.open.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-500">High:</span>
+            <span className="font-mono text-green-400">₹{data.high.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-500">Low:</span>
+            <span className="font-mono text-red-400">₹{data.low.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-500">Close:</span>
+            <span className="font-mono text-white">₹{data.close.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between gap-4 pt-1 border-t border-[#1A1A1A]">
+            <span className="text-gray-500">Volume:</span>
+            <span className="font-mono text-cyan-400">{(data.volume / 1000).toFixed(0)}K</span>
+          </div>
         </div>
       </div>
     );
-  }
-
-  return (
-    <div className="min-h-screen bg-[#050505] text-white font-['Outfit']">
-      <Confetti active={showConfetti} config={confirmedAction === 'buy' ? confettiConfig : {...confettiConfig, stagger: 10}} />
-
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-gradient-to-r from-[#0D0D0D] to-[#1A1A1A] border-b border-[#2A2A2A] backdrop-blur-sm">
-        <div className="max-w-[1400px] mx-auto px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate('/paper-trading')}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span className="font-bold">Back to Trading</span>
-          </button>
-          
-          <div className="text-center flex-1">
-            <h1 className="text-3xl font-bold text-white">{stock.name}</h1>
-            <p className="text-sm text-gray-400">{symbol}</p>
+  }}
+/>
+                    <Bar
+                      dataKey="body"
+                      shape={(props) => <Candlestick {...props} />}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
 
-          <div className="text-right">
-            <p className="text-3xl font-mono font-bold text-cyan-400">₹{simulatedPrice.toFixed(2)}</p>
-          </div>
-        </div>
-      </div>
+          {/* Trading Panel */}
+          <div className="space-y-6">
+            {/* Message */}
+            {message && (
+              <div className={`p-4 rounded-xl border ${
+                messageType === 'success' 
+                  ? 'bg-green-500/10 border-green-500/30 text-green-400' 
+                  : 'bg-red-500/10 border-red-500/30 text-red-400'
+              }`}>
+                <p className="text-sm font-medium">{message}</p>
+              </div>
+            )}
 
-      <div className="p-6 lg:p-8">
-        <div className="max-w-[1400px] mx-auto">
-          {/* Price Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-[#0D0D0D] border border-[#262626] p-6 rounded-xl">
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Current Price</p>
-              <p className="text-3xl font-mono font-bold text-cyan-400">₹{simulatedPrice.toFixed(2)}</p>
-            </div>
-            
-            <div className="bg-[#0D0D0D] border border-[#262626] p-6 rounded-xl">
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Your Holdings</p>
-              <p className="text-3xl font-mono font-bold text-yellow-400">
-                {selectedHolding ? selectedHolding.quantity : 0} units
-              </p>
-            </div>
-
-            <div className="bg-[#0D0D0D] border border-[#262626] p-6 rounded-xl">
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Cash Balance</p>
+            {/* Balance Info */}
+            <div className="bg-gradient-to-br from-[#0D0D0D] to-[#1A1A1A] border border-[#1A1A1A] p-6 rounded-xl">
+              <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Available Balance</p>
               <p className="text-3xl font-mono font-bold text-green-400">₹{balance.toLocaleString('en-IN', {maximumFractionDigits: 0})}</p>
             </div>
-          </div>
 
-          {/* Price Chart */}
-          {/* <div className="bg-[#0D0D0D] border border-[#262626] p-6 rounded-xl mb-8">
-            <h3 className="text-lg font-bold mb-4 text-white">Price Movement (Last 100 mins)</h3>
-            <ResponsiveContainer width="100%" height={350}>
-              <AreaChart data={priceHistory}>
-                <defs>
-                  <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                <XAxis dataKey="time" stroke="#666" />
-                <YAxis stroke="#666" domain={['dataMin - 5', 'dataMax + 5']} />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: '#0D0D0D',
-                    border: '1px solid #262626',
-                    borderRadius: '8px'
-                  }}
-                  cursor={{ stroke: '#3b82f6', strokeWidth: 2 }}
-                />
-                <Area type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div> */}
-
-          <div className="bg-[#0D0D0D] border border-[#262626] p-6 rounded-xl mb-8">
-  <h3 className="text-lg font-bold mb-4 text-white">Live Technical Chart</h3>
-  <ResponsiveContainer width="100%" height={350}>
-    <ComposedChart data={priceHistory}>
-      <CartesianGrid strokeDasharray="3 3" stroke="#1A1A1A" vertical={false} />
-      <XAxis dataKey="time" stroke="#666" tick={{fontSize: 12}} />
-      <YAxis 
-        domain={['dataMin - 20', 'dataMax + 20']} 
-        orientation="right" 
-        stroke="#666" 
-        tick={{fontSize: 12}}
-        tickFormatter={(val) => `₹${val.toFixed(0)}`}
-      />
-      <Tooltip 
-        content={({ active, payload }) => {
-          if (active && payload && payload.length) {
-            const d = payload[0].payload;
-            return (
-              <div className="bg-[#0D0D0D] border border-[#333] p-3 rounded shadow-2xl text-[10px] font-mono">
-                <p className="text-green-400">O: {d.open.toFixed(2)}</p>
-                <p className="text-white">H: {d.high.toFixed(2)}</p>
-                <p className="text-white">L: {d.low.toFixed(2)}</p>
-                <p className="text-red-400">C: {d.close.toFixed(2)}</p>
+            {/* Holdings */}
+            {selectedHolding && (
+              <div className="bg-gradient-to-br from-[#0D0D0D] to-[#1A1A1A] border border-[#1A1A1A] p-6 rounded-xl">
+                <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-4">Your Holdings</p>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 text-sm">Quantity</span>
+                    <span className="font-mono font-bold">{selectedHolding.quantity}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 text-sm">Avg Price</span>
+                    <span className="font-mono font-bold">₹{selectedHolding.avgPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 text-sm">Current Value</span>
+                    <span className="font-mono font-bold">₹{(selectedHolding.quantity * currentPrice).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
+                  </div>
+                  <div className="border-t border-[#1A1A1A] pt-3 mt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">P&L</span>
+                      <span className={`font-mono font-bold text-lg ${selectedHolding.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {selectedHolding.pnl >= 0 ? '+' : ''}₹{selectedHolding.pnl.toLocaleString('en-IN', {maximumFractionDigits: 0})}
+                        <span className="text-xs ml-2">({selectedHolding.pnlPercent.toFixed(2)}%)</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            );
-          }
-          return null;
-        }}
-      />
-      <Bar 
-        dataKey="body" 
-        shape={<Candlestick />}
-        isAnimationActive={false}
-      >
-        {priceHistory.map((entry, index) => (
-          <Cell 
-            key={`cell-${index}`} 
-            fill={entry.close > entry.open ? '#22c55e' : '#ef4444'} 
-          />
-        ))}
-      </Bar>
-    </ComposedChart>
-  </ResponsiveContainer>
-      </div>
+            )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Trading Panel */}
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white mb-6">Execute Trade</h2>
-
-              {/* Action Selection */}
-              <div className="flex gap-3">
+            {/* Trading Form */}
+            <div className="bg-gradient-to-br from-[#0D0D0D] to-[#1A1A1A] border border-[#1A1A1A] p-6 rounded-xl">
+              <h3 className="text-lg font-bold mb-4">Trade</h3>
+              
+              {/* Action Toggle */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
                 <button
                   onClick={() => setAction('BUY')}
-                  className={`flex-1 py-4 rounded-lg font-bold transition-all text-lg ${
+                  className={`py-3 rounded-lg font-bold transition-all ${
                     action === 'BUY'
-                      ? 'bg-green-500/20 border border-green-500 text-green-400'
-                      : 'bg-[#0D0D0D] border border-[#262626] text-gray-400 hover:border-green-500'
+                      ? 'bg-green-500 text-white shadow-lg shadow-green-500/50'
+                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
                   }`}
                 >
-                  <ShoppingCart className="inline mr-2" size={18} /> Buy
+                  <TrendingUp className="inline mr-2" size={16} />
+                  BUY
                 </button>
                 <button
                   onClick={() => setAction('SELL')}
-                  className={`flex-1 py-4 rounded-lg font-bold transition-all text-lg ${
+                  className={`py-3 rounded-lg font-bold transition-all ${
                     action === 'SELL'
-                      ? selectedHolding && selectedHolding.pnl >= 0
-                        ? 'bg-green-500/20 border border-green-500 text-green-400'
-                        : 'bg-red-500/20 border border-red-500 text-red-400'
-                      : selectedHolding && selectedHolding.pnl >= 0
-                        ? 'bg-[#0D0D0D] border border-[#262626] text-gray-400 hover:border-green-500'
-                        : 'bg-[#0D0D0D] border border-[#262626] text-gray-400 hover:border-red-500'
+                      ? 'bg-red-500 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-white/5 text-gray-400 hover:bg-white/10'
                   }`}
+                  disabled={!selectedHolding}
                 >
-                  <TrendingDown className="inline mr-2" size={18} /> Sell
+                  <TrendingDown className="inline mr-2" size={16} />
+                  SELL
                 </button>
               </div>
 
               {/* Quantity Input */}
-              <div>
-                <label className="block text-sm font-bold text-gray-400 mb-3">Quantity</label>
+              <div className="mb-4">
+                <label className="text-xs text-gray-500 uppercase font-bold tracking-widest block mb-2">
+                  Quantity
+                </label>
                 <input
                   type="number"
-                  min="1"
                   value={quantity}
                   onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full bg-[#0D0D0D] border border-[#262626] rounded-lg p-4 text-white text-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full bg-[#050505] border border-[#1A1A1A] rounded-lg px-4 py-3 font-mono text-lg focus:border-cyan-500 outline-none"
+                  min="1"
+                  max={action === 'SELL' && selectedHolding ? selectedHolding.quantity : undefined}
                 />
-              </div>
-
-              {/* Cost/Proceeds */}
-              <div className="bg-[#0D0D0D] border border-[#262626] p-4 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">
-                  {action === 'BUY' ? 'Total Investment' : 'Total Proceeds'}
-                </p>
-                <p className="text-2xl font-mono font-bold text-cyan-400">
-                  ₹{totalCost.toLocaleString('en-IN', {maximumFractionDigits: 0})}
-                </p>
-              </div>
-
-              {/* Warnings */}
-              {action === 'SELL' && (
-                <div className={`border rounded-lg p-4 flex gap-3 ${
-                  selectedHolding 
-                    ? 'bg-blue-500/10 border-blue-500/30' 
-                    : 'bg-red-500/10 border-red-500/30'
-                }`}>
-                  <AlertCircle size={20} className={`flex-shrink-0 ${
-                    selectedHolding ? 'text-blue-400' : 'text-red-400'
-                  }`} />
-                  <div className={`text-sm ${selectedHolding ? 'text-blue-400' : 'text-red-400'}`}>
-                    {selectedHolding ? (
-                      <>You own <span className="font-bold">{selectedHolding.quantity}</span> units (Avg: ₹{selectedHolding.avgPrice.toFixed(0)})</>
-                    ) : (
-                      <>You don't own this stock</>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {action === 'BUY' && totalCost > balance && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex gap-3">
-                  <AlertCircle size={20} className="text-red-400 flex-shrink-0" />
-                  <div className="text-sm text-red-400">
-                    Insufficient balance. Need ₹{(totalCost - balance).toLocaleString('en-IN', {maximumFractionDigits: 0})} more
-                  </div>
-                </div>
-              )}
-
-              {isRateLimited && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex gap-3">
-                  <AlertCircle size={20} className="text-yellow-400 flex-shrink-0" />
-                  <div className="text-sm text-yellow-400">
-                    ⏱️ Trade limit active: Wait <span className="font-bold">{cooldownSeconds}s</span> for next trade
-                  </div>
-                </div>
-              )}
-
-              {/* Action Button */}
-              <button
-                onClick={handleAction}
-                disabled={
-                  isRateLimited ||
-                  (action === 'BUY' ? totalCost > balance :
-                  action === 'SELL' ? !selectedHolding || quantity > selectedHolding.quantity :
-                  true)
-                }
-                className={`w-full py-5 font-bold uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 text-lg ${
-                  isRateLimited
-                    ? 'bg-gray-600/30 text-gray-400 cursor-not-allowed'
-                    : action === 'BUY'
-                      ? totalCost > balance
-                        ? 'bg-gray-600/30 text-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg shadow-green-500/50'
-                      : !selectedHolding || quantity > selectedHolding.quantity
-                        ? 'bg-gray-600/30 text-gray-400 cursor-not-allowed'
-                        : selectedHolding && selectedHolding.pnl >= 0
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg shadow-green-500/50'
-                          : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg shadow-red-500/50'
-                }`}
-              >
-                {action === 'BUY' ? <ShoppingCart size={20} /> : <TrendingDown size={20} />}
-                {isRateLimited ? `⏱️ Wait ${cooldownSeconds}s` : `${action} ${quantity} Units @ ₹${simulatedPrice.toFixed(0)}`}
-              </button>
-
-              {/* Message */}
-              {message && (
-                <div className={`p-4 rounded-lg text-sm font-mono border ${
-                  messageType === 'success'
-                    ? 'bg-green-500/20 border-green-500/50 text-green-400'
-                    : 'bg-red-500/20 border-red-500/50 text-red-400'
-                }`}>
-                  {message}
-                </div>
-              )}
-            </div>
-
-            {/* Stock Info Panel */}
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white mb-6">Stock Information</h2>
-
-              <div className="space-y-3">
-                <div className="bg-[#0D0D0D] border border-[#262626] p-4 rounded-lg">
-                  <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Full Name</p>
-                  <p className="text-white font-semibold text-lg">{stock.name}</p>
-                </div>
-
-                <div className="bg-[#0D0D0D] border border-[#262626] p-4 rounded-lg">
-                  <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Stock Symbol</p>
-                  <p className="text-white font-semibold text-lg">{symbol}</p>
-                </div>
-
-                <div className="bg-[#0D0D0D] border border-[#262626] p-4 rounded-lg">
-                  <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Sector</p>
-                  <p className="text-white font-semibold">Financial Services & Technology</p>
-                </div>
-
-                <div className="bg-[#0D0D0D] border border-[#262626] p-4 rounded-lg">
-                  <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">Market Cap</p>
-                  <p className="text-white font-semibold">₹5,00,000 Crores</p>
-                </div>
-
-                <div className="bg-[#0D0D0D] border border-[#262626] p-4 rounded-lg">
-                  <p className="text-xs text-gray-500 uppercase font-bold tracking-widest mb-2">52 Week Range</p>
-                  <p className="text-white font-semibold">₹{(simulatedPrice * 1.2).toFixed(0)} - ₹{(simulatedPrice * 0.8).toFixed(0)}</p>
-                </div>
-
-                {selectedHolding && (
-                  <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 p-4 rounded-lg">
-                    <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-3">Your Position</p>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Quantity:</span>
-                        <span className="font-bold text-white">{selectedHolding.quantity} units</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Avg Price:</span>
-                        <span className="font-bold text-white">₹{selectedHolding.avgPrice.toFixed(0)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Total Cost:</span>
-                        <span className="font-bold text-white">₹{(selectedHolding.quantity * selectedHolding.avgPrice).toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
-                      </div>
-                      <div className="border-t border-blue-500/20 pt-2 mt-2 flex justify-between">
-                        <span className="text-gray-400">P&L:</span>
-                        <span className={`font-bold ${selectedHolding.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {selectedHolding.pnl >= 0 ? '▲' : '▼'} ₹{Math.abs(selectedHolding.pnl).toFixed(0)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">P&L %:</span>
-                        <span className={`font-bold ${selectedHolding.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {selectedHolding.pnlPercent >= 0 ? '▲' : '▼'} {Math.abs(selectedHolding.pnlPercent).toFixed(2)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                {action === 'SELL' && selectedHolding && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Available: {selectedHolding.quantity} units
+                  </p>
                 )}
               </div>
+
+              {/* Total Cost */}
+              <div className="bg-[#050505] border border-[#1A1A1A] rounded-lg p-4 mb-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">Total {action === 'BUY' ? 'Cost' : 'Proceeds'}</span>
+                  <span className="font-mono font-bold text-xl">₹{totalCost.toLocaleString('en-IN', {maximumFractionDigits: 0})}</span>
+                </div>
+              </div>
+
+              {/* Execute Button */}
+              <button
+                onClick={handleAction}
+                disabled={isRateLimited || (action === 'SELL' && !selectedHolding)}
+                className={`w-full py-4 rounded-lg font-bold text-white transition-all ${
+                  action === 'BUY'
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg shadow-green-500/50'
+                    : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg shadow-red-500/50'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {isRateLimited 
+                  ? `Wait ${cooldownSeconds}s...` 
+                  : action === 'BUY' 
+                    ? 'Execute Buy Order' 
+                    : 'Execute Sell Order'}
+              </button>
             </div>
           </div>
         </div>

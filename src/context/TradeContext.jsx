@@ -1,29 +1,30 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const TradeContext = createContext();
+const API_BASE_URL = 'http://localhost:5000/api/v1';
 
-// Stock market data with current prices
-export const STOCK_MARKET = {
-  NIFTY50: { name: 'NIFTY 50', symbol: 'NIFTY50', price: 25800, change: 1.2, change_percent: 0.58 },
-  TCS: { name: 'Tata Consultancy Services', symbol: 'TCS', price: 3850, change: 45, change_percent: 1.19 },
-  INFY: { name: 'Infosys Limited', symbol: 'INFY', price: 2780, change: -15, change_percent: -0.54 },
-  RELIANCE: { name: 'Reliance Industries', symbol: 'RELIANCE', price: 2950, change: 25, change_percent: 0.85 },
-  HDFC: { name: 'HDFC Bank', symbol: 'HDFC', price: 1850, change: -10, change_percent: -0.54 },
-  ICICIBANK: { name: 'ICICI Bank', symbol: 'ICICIBANK', price: 1125, change: 15, change_percent: 1.35 },
-  BAJAJFINSV: { name: 'Bajaj Finserv', symbol: 'BAJAJFINSV', price: 1680, change: 8, change_percent: 0.48 },
-  WIPRO: { name: 'Wipro Limited', symbol: 'WIPRO', price: 490, change: -5, change_percent: -1.01 },
-  SBIN: { name: 'State Bank of India', symbol: 'SBIN', price: 620, change: 10, change_percent: 1.64 },
-  LT: { name: 'Larsen and Toubro', symbol: 'LT', price: 3580, change: 35, change_percent: 0.98 },
-};
+// Stock market data - will be populated from API
+export let STOCK_MARKET = {};
 
 // Initialize state from localStorage or defaults
 const initializeState = () => {
+  // Check if we need to reset (you can remove this after first run)
+  const needsReset = localStorage.getItem('gammaBalanceVersion') !== '2.0';
+  
+  if (needsReset) {
+    // Clear old data
+    localStorage.removeItem('gammaBalance');
+    localStorage.removeItem('gammaHoldings');
+    localStorage.removeItem('gammaTradeHistory');
+    localStorage.setItem('gammaBalanceVersion', '2.0');
+  }
+  
   const savedBalance = localStorage.getItem('gammaBalance');
   const savedHoldings = localStorage.getItem('gammaHoldings');
   const savedTradeHistory = localStorage.getItem('gammaTradeHistory');
   
   return {
-    balance: savedBalance ? parseFloat(savedBalance) : 1000000,
+    balance: savedBalance ? parseFloat(savedBalance) : 100000, // Changed to 100000
     holdings: savedHoldings ? JSON.parse(savedHoldings) : [],
     tradeHistory: savedTradeHistory ? JSON.parse(savedTradeHistory) : []
   };
@@ -31,24 +32,85 @@ const initializeState = () => {
 
 export const TradeProvider = ({ children }) => {
   const initialState = initializeState();
-  const [balance, setBalance] = useState(initialState.balance); // Virtual 10 Lakhs
-  const [holdings, setHoldings] = useState(initialState.holdings); // Current stock holdings
-  const [tradeHistory, setTradeHistory] = useState(initialState.tradeHistory); // Buy/Sell history
+  const [balance, setBalance] = useState(initialState.balance);
+  const [holdings, setHoldings] = useState(initialState.holdings);
+  const [tradeHistory, setTradeHistory] = useState(initialState.tradeHistory);
+  const [stockData, setStockData] = useState({});
+  const [loading, setLoading] = useState(true);
   const [hasVisitedBefore, setHasVisitedBefore] = useState(
     localStorage.getItem('paperTradingVisited') === 'true'
   );
 
-  // Save balance to localStorage whenever it changes
+  // Fetch real-time stock data
+  const fetchStockData = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/markets/live`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform API data to match existing format
+        const transformedData = {};
+        data.stocks.forEach(stock => {
+          transformedData[stock.symbol] = {
+            name: stock.name,
+            symbol: stock.symbol,
+            price: stock.price,
+            change: stock.change,
+            change_percent: stock.change_percent,
+            volume: stock.volume,
+            high: stock.high,
+            low: stock.low,
+            open: stock.open,
+            bse_code: stock.bse_code,
+            yahoo_symbol: stock.yahoo_symbol
+          };
+        });
+        
+        setStockData(transformedData);
+        STOCK_MARKET = transformedData;
+        
+        // Update holdings with new prices
+        setHoldings(prev => 
+          prev.map(holding => {
+            const currentStock = transformedData[holding.symbol];
+            if (currentStock) {
+              const newPrice = currentStock.price;
+              return {
+                ...holding,
+                currentPrice: newPrice,
+                pnl: (newPrice - holding.avgPrice) * holding.quantity,
+                pnlPercent: ((newPrice - holding.avgPrice) / holding.avgPrice) * 100
+              };
+            }
+            return holding;
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching stock data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial fetch and periodic updates
+  useEffect(() => {
+    fetchStockData();
+    
+    // Update every 30 seconds
+    const interval = setInterval(fetchStockData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchStockData]);
+
+  // Save to localStorage
   useEffect(() => {
     localStorage.setItem('gammaBalance', balance.toString());
   }, [balance]);
 
-  // Save holdings to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('gammaHoldings', JSON.stringify(holdings));
   }, [holdings]);
 
-  // Save trade history to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('gammaTradeHistory', JSON.stringify(tradeHistory));
   }, [tradeHistory]);
@@ -65,7 +127,6 @@ export const TradeProvider = ({ children }) => {
       return { success: false, message: 'Invalid quantity' };
     }
 
-    // Check if stock already exists in holdings
     setHoldings(prev => {
       const existingIndex = prev.findIndex(h => h.symbol === symbol);
       let updatedHoldings;
@@ -88,7 +149,7 @@ export const TradeProvider = ({ children }) => {
         updatedHoldings = [...prev, {
           id: Date.now(),
           symbol,
-          name: STOCK_MARKET[symbol]?.name || symbol,
+          name: stockData[symbol]?.name || symbol,
           quantity,
           avgPrice: currentPrice,
           totalCost,
@@ -103,11 +164,10 @@ export const TradeProvider = ({ children }) => {
 
     setBalance(prev => prev - totalCost);
 
-    // Record trade
     setTradeHistory(prev => [...prev, {
       id: Date.now(),
       symbol,
-      name: STOCK_MARKET[symbol]?.name || symbol,
+      name: stockData[symbol]?.name || symbol,
       type: 'BUY',
       quantity,
       price: currentPrice,
@@ -117,7 +177,7 @@ export const TradeProvider = ({ children }) => {
     }]);
 
     return { success: true, message: 'Stock purchased successfully!' };
-  }, [balance]);
+  }, [balance, stockData]);
 
   // Sell stocks
   const sellStock = useCallback((symbol, quantity) => {
@@ -138,7 +198,6 @@ export const TradeProvider = ({ children }) => {
 
     setBalance(prev => prev + totalProceeds);
 
-    // Update holdings
     setHoldings(prev => {
       return prev.map(h => {
         if (h.symbol === symbol) {
@@ -158,11 +217,10 @@ export const TradeProvider = ({ children }) => {
       }).filter(Boolean);
     });
 
-    // Record trade
     setTradeHistory(prev => [...prev, {
       id: Date.now(),
       symbol,
-      name: STOCK_MARKET[symbol]?.name || symbol,
+      name: stockData[symbol]?.name || symbol,
       type: 'SELL',
       quantity,
       price: currentPrice,
@@ -176,9 +234,9 @@ export const TradeProvider = ({ children }) => {
       message: `Sold ${quantity} units with P&L: ₹${pnl.toFixed(0)}`,
       pnl
     };
-  }, [holdings]);
+  }, [holdings, stockData]);
 
-  // Update stock prices
+  // Update stock price
   const updateStockPrice = useCallback((symbol, newPrice) => {
     setHoldings(prev => 
       prev.map(h => {
@@ -212,17 +270,31 @@ export const TradeProvider = ({ children }) => {
     localStorage.setItem('paperTradingVisited', 'true');
   }, []);
 
+  // Reset portfolio (for testing/admin)
+  const resetPortfolio = useCallback(() => {
+    setBalance(100000);
+    setHoldings([]);
+    setTradeHistory([]);
+    localStorage.setItem('gammaBalance', '100000');
+    localStorage.setItem('gammaHoldings', '[]');
+    localStorage.setItem('gammaTradeHistory', '[]');
+  }, []);
+
   const value = {
     balance,
     holdings,
     tradeHistory,
     hasVisitedBefore,
+    stockData,
+    loading,
     buyStock,
     sellStock,
     updateStockPrice,
     getPortfolioValue,
     getTotalPnL,
-    markFirstVisitComplete
+    markFirstVisitComplete,
+    refreshStockData: fetchStockData,
+    resetPortfolio
   };
 
   return (

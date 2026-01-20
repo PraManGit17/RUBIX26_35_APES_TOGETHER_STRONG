@@ -1,12 +1,13 @@
-import React from 'react';
+// Updated WatchlistPage.jsx with loading and error states
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWatchlist } from '../context/WatchlistContext';
 import { STOCK_MARKET } from '../context/TradeContext';
-import { Star, TrendingUp, TrendingDown, ArrowRight, Search } from 'lucide-react';
+import { Star, TrendingUp, TrendingDown, ArrowRight, Search, Loader2, RefreshCw } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 const WatchlistPage = () => {
-  const { watchlist, toggleWatchlist } = useWatchlist();
+  const { watchlist, toggleWatchlist, loading, error, refreshWatchlist } = useWatchlist();
   const navigate = useNavigate();
 
   // Get full data for items in watchlist
@@ -16,10 +17,37 @@ const WatchlistPage = () => {
     <div className="min-h-screen bg-[#050505] text-white p-6 lg:p-10 font-['Outfit']">
       <Navbar/>
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-black mb-2 tracking-tighter">MY WATCHLIST</h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-3xl font-black tracking-tighter">MY WATCHLIST</h1>
+          <button 
+            onClick={refreshWatchlist}
+            className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+            disabled={loading}
+          >
+            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
         <p className="text-gray-500 mb-8">Tracking {watchlist.length} key assets</p>
 
-        {favoriteStocks.length === 0 ? (
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 mb-6">
+            <p className="text-red-400 text-sm">Error: {error}</p>
+            <button 
+              onClick={refreshWatchlist}
+              className="mt-2 text-red-400 text-xs font-bold hover:underline"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="animate-spin text-cyan-400" size={48} />
+          </div>
+        ) : favoriteStocks.length === 0 ? (
           <div className="border-2 border-dashed border-[#1A1A1A] rounded-3xl p-20 text-center">
             <Search className="mx-auto text-gray-700 mb-4" size={48} />
             <p className="text-gray-400">Your watchlist is empty.</p>

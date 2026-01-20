@@ -1,49 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { useTrade, STOCK_MARKET } from '../context/TradeContext';
-import { TrendingUp, TrendingDown, ShoppingCart, DollarSign, BarChart3, Zap, AlertCircle, ChevronRight } from 'lucide-react';
+import { useTrade } from '../context/TradeContext';
+import { TrendingUp, TrendingDown, ShoppingCart, DollarSign, BarChart3, Zap, AlertCircle, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { useNavigate } from 'react-router-dom';
 import PaperTradingLayout from '../components/PaperTradingLayout';
 
 const PaperTrading = () => {
   const navigate = useNavigate();
-  const { balance, holdings, buyStock, sellStock, getPortfolioValue, getTotalPnL, markFirstVisitComplete, hasVisitedBefore } = useTrade();
+  const { 
+    balance, 
+    holdings, 
+    buyStock, 
+    sellStock, 
+    getPortfolioValue, 
+    getTotalPnL, 
+    markFirstVisitComplete, 
+    hasVisitedBefore,
+    stockData,
+    loading: stocksLoading,
+    refreshStockData
+  } = useTrade();
   
-  const [selectedStock, setSelectedStock] = useState('NIFTY50');
+  const [selectedStock, setSelectedStock] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [action, setAction] = useState('BUY'); // BUY or SELL
+  const [action, setAction] = useState('BUY');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
   const [showConfetti, setShowConfetti] = useState(false);
   const [confirmedAction, setConfirmedAction] = useState(null);
   const [showGuide, setShowGuide] = useState(!hasVisitedBefore);
-  const [simulatedPrices, setSimulatedPrices] = useState(STOCK_MARKET);
   const [lastTradeTime, setLastTradeTime] = useState(null);
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
-  const RATE_LIMIT_MS = 2000; // 2 seconds between trades
+  const RATE_LIMIT_MS = 2000;
 
-  // Simulate price fluctuations
+  // Set first stock as selected when data loads
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSimulatedPrices(prev => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach(key => {
-          const change = (Math.random() - 0.5) * 50;
-          updated[key] = {
-            ...updated[key],
-            price: Math.max(100, updated[key].price + change),
-            change: change,
-            change_percent: ((change / updated[key].price) * 100).toFixed(2)
-          };
-        });
-        return updated;
-      });
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
+    if (!selectedStock && Object.keys(stockData).length > 0) {
+      setSelectedStock(Object.keys(stockData)[0]);
+    }
+  }, [stockData, selectedStock]);
 
   // Handle rate limit cooldown
   useEffect(() => {
@@ -64,11 +61,13 @@ const PaperTrading = () => {
     }
   }, [isRateLimited, lastTradeTime]);
 
-  const currentStock = simulatedPrices[selectedStock];
-  const totalCost = quantity * currentStock.price;
+  const currentStock = stockData[selectedStock];
+  const totalCost = currentStock ? quantity * currentStock.price : 0;
   const selectedHolding = holdings.find(h => h.symbol === selectedStock);
 
   const handleAction = () => {
+    if (!currentStock) return;
+
     // Check rate limiting
     if (isRateLimited) {
       setMessageType('error');
@@ -154,7 +153,7 @@ const PaperTrading = () => {
                   <div>
                     <h3 className="text-lg font-bold text-white mb-2">Features:</h3>
                     <ul className="list-disc list-inside space-y-2 ml-2 text-sm">
-                      <li>Real-time price simulation (updates every 2 seconds)</li>
+                      <li>Real-time price updates from Yahoo Finance</li>
                       <li>Automatic P&L calculation</li>
                       <li>Portfolio overview with total value</li>
                       <li>Detailed stock view with price charts</li>
@@ -185,28 +184,24 @@ const PaperTrading = () => {
             </div>
           )}
 
-          {/* Hero Header */}
-          <div className="mb-12 relative">
-            
-            {/* <div className="relative z-10 flex items-center gap-6 mb-6">
-              <div className="hidden md:block">
-                <img src="/logos/gamma.png" className='w-16 h-16 animate-pulse' alt="Gamma Logo" />
-              </div>
-              <div>
-                <h1 className="text-5xl md:text-6xl font-bold mb-2 text-white  bg-clip-text text-transparent">
-                  Gamma Trading
-                </h1>
-                <p className="text-gray-400 text-lg">Master the market with virtual capital • Real-time pricing • Professional analytics</p>
-              </div>
-            </div> */}
-          </div>
-
           {/* Title Section */}
-          <div className="mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-3 font-['Outfit'] text-white">
-              Trading Dashboard
-            </h1>
-            <p className="text-gray-400 text-base font-['Outfit'] leading-relaxed">Master your trading skills with virtual capital. Select any stock to view comprehensive charts and execute trades.</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold mb-3 font-['Outfit'] text-white">
+                Trading Dashboard
+              </h1>
+              <p className="text-gray-400 text-base font-['Outfit'] leading-relaxed">
+                Trade with real-time market data. Auto-updates every 30 seconds.
+              </p>
+            </div>
+            <button
+              onClick={refreshStockData}
+              disabled={stocksLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={18} className={stocksLoading ? 'animate-spin' : ''} />
+              <span className="text-sm font-bold">Refresh</span>
+            </button>
           </div>
 
           {/* Header with Portfolio Stats */}
@@ -250,40 +245,50 @@ const PaperTrading = () => {
             </div>
           </div>
 
-          {/* Stock Grid */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-6 font-['Outfit'] text-white">Available Stocks</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {Object.entries(simulatedPrices).map(([key, stock]) => (
-                <button
-                  key={key}
-                  onClick={() => navigate(`/stock/${key}`)}
-                  className="group bg-gradient-to-br from-[#0D0D0D] to-[#1A1A1A] border border-[#262626] hover:border-blue-500/50 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-500/20 cursor-pointer text-left"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="font-bold text-white text-lg font-['Outfit']">{stock.symbol}</p>
-                      <p className="text-xs text-gray-500 font-['Outfit']">{stock.name}</p>
-                    </div>
-                    <ChevronRight size={18} className="text-blue-400 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-lg font-mono font-bold text-cyan-400">₹{stock.price.toFixed(0)}</p>
-                      <p className={`text-xs font-mono ${stock.change_percent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {stock.change_percent >= 0 ? '▲' : '▼'} {Math.abs(stock.change_percent).toFixed(2)}%
-                      </p>
-                    </div>
-                    <ShoppingCart size={16} className="text-gray-600 group-hover:text-blue-400 transition-colors" />
-                  </div>
-                </button>
-              ))}
+          {/* Loading State */}
+          {stocksLoading && Object.keys(stockData).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="animate-spin text-cyan-400 mb-4" size={48} />
+              <p className="text-gray-400 text-sm">Loading real-time market data...</p>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Stock Grid */}
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-6 font-['Outfit'] text-white">Available Stocks ({Object.keys(stockData).length})</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {Object.entries(stockData).map(([key, stock]) => (
+                    <button
+                      key={key}
+                      onClick={() => navigate(`/stock/${key}`)}
+                      className="group bg-gradient-to-br from-[#0D0D0D] to-[#1A1A1A] border border-[#262626] hover:border-blue-500/50 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-500/20 cursor-pointer text-left"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="font-bold text-white text-lg font-['Outfit']">{stock.symbol}</p>
+                          <p className="text-xs text-gray-500 font-['Outfit'] truncate">{stock.name}</p>
+                        </div>
+                        <ChevronRight size={18} className="text-blue-400 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className="text-lg font-mono font-bold text-cyan-400">₹{stock.price.toFixed(0)}</p>
+                          <p className={`text-xs font-mono ${stock.change_percent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {stock.change_percent >= 0 ? '▲' : '▼'} {Math.abs(stock.change_percent).toFixed(2)}%
+                          </p>
+                        </div>
+                        <ShoppingCart size={16} className="text-gray-600 group-hover:text-blue-400 transition-colors" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </PaperTradingLayout>
-    );
-  };
+  );
+};
 
 export default PaperTrading;
