@@ -15,7 +15,7 @@ import NewsPage from './pages/NewsPage';
 import WatchlistPage from './pages/WatchlistPage';
 import MarketPage from './pages/MarketPage';
 import Prediction from './pages/Prediction';
-
+import Analysis from './pages/Analysis';
 
 function App() {
   return (
@@ -36,6 +36,7 @@ function App() {
       <Route path='/watchlist' element={<WatchlistPage/>} />
       <Route path='/markets' element={<MarketPage/>}/>
       <Route path="*" element={<NotFound />} />
+      <Route path="/analysis" element={<Analysis />} />
     </Routes>
   );
 }
