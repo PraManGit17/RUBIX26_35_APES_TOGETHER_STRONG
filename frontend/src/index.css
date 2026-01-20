@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+
+html,
+body {
+  overflow-x: hidden;
+}
+
 .urbanist {
   font-family: "Urbanist", sans-serif;
   font-optical-sizing: auto;
@@ -18,7 +24,7 @@
 .syne {
   font-family: "Syne", sans-serif;
   font-optical-sizing: auto;
-  font-weight:  500;
+  font-weight: 500;
   font-style: normal;
 }
 
@@ -28,16 +34,67 @@
   font-style: normal;
 }
 
-
-/* @keyframes scanline {
-  0% { transform: translateY(0); opacity: 0; }
-  50% { opacity: 1; }
-  100% { transform: translateY(500px); opacity: 0; }
-}
-
-.animate-scanline {
-  animation: scanline 4s linear infinite;
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
 }
 
 
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Poppins:wght@300;400;600&display=swap'); */
+html {
+  scrollbar-width: none;
+}
+
+body {
+  -ms-overflow-style: none;
+}
+
+.grid-bg {
+  position: absolute;
+  inset: -200%;
+  pointer-events: none;
+  transform: rotate(45deg);
+  animation: grid-move 18s linear infinite;
+}
+
+/* glow layer */
+.grid-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.468) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248, 248, 248, 0.3) 1px, transparent 1px);
+
+  background-size: 60px 60px;
+
+  filter: blur(100px);
+  opacity: 0.6;
+}
+
+/* sharp grid layer */
+.grid-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    linear-gradient(rgba(239, 233, 233, 0.378) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.426) 1px, transparent 1px);
+
+  background-size: 60px 60px;
+}
+
+@keyframes grid-move {
+  from {
+    transform: translate(-200px, -200px) rotate(0deg);
+  }
+  to {
+    transform: translate(200px, 200px) rotate(0deg);
+  }
+}
+
+
+.coin {
+  transform-origin: center;
+}
