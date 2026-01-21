@@ -5,6 +5,7 @@ import { initialData } from '../data/mockData';
 import { Activity, Wallet, BarChart3, Clock, ShieldCheck, Zap, Globe, Cpu } from "lucide-react";
 import ChartDisplay from '../components/Chart Components/ChartDisplay';
 import RiskCalculator from '../components/Calculator/RiskCalculator';
+import Navbar from '../components/Navbar';
 
 const TradingFloor = () => {
   const { balance, positions } = useTrade();
@@ -18,6 +19,8 @@ const TradingFloor = () => {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans antialiased">
+      <Navbar />
+      <div className="pt-20">
       
       {/* 1. TOP UTILITY BAR (Global HUD) */}
       <nav className="border-b border-white/5 bg-[#080808]/80 backdrop-blur-xl sticky top-0 z-50 px-6 py-3 flex items-center justify-between">
@@ -159,6 +162,7 @@ const TradingFloor = () => {
           </div>
         </section>
       </main>
+      </div>
     </div>
   );
 };

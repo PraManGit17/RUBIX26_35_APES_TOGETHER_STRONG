@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CloudLightning, 
   Gauge, 
@@ -10,13 +10,93 @@ import {
   Target,
   Activity,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Loader2,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
+import Navbar from '../components/Navbar';
 
-// Ensure your data is exported correctly from the data file
-import { ANALYSIS_DATA } from '../data/analysisData';
+const API_BASE_URL = 'http://localhost:5000';
 
 const Analysis = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchMarketStatus = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(`${API_BASE_URL}/api/v1/market-status`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch market status: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      setData(result);
+    } catch (err) {
+      setError(err.message || 'Failed to load market data');
+      console.error('Market status error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMarketStatus();
+    
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchMarketStatus, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-slate-200 font-['Outfit'] selection:bg-indigo-500/30">
+        <Navbar />
+        <div className="p-4 lg:p-8 pt-24">
+          <div className="max-w-[1400px] mx-auto flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mx-auto mb-4" />
+              <p className="text-xl text-slate-400 font-medium">Loading Market Analysis...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#050505] text-slate-200 font-['Outfit'] selection:bg-indigo-500/30">
+        <Navbar />
+        <div className="p-4 lg:p-8 pt-24">
+          <div className="max-w-[1400px] mx-auto">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-8 text-center">
+              <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-black text-red-400 mb-2">Failed to Load Market Data</h2>
+              <p className="text-slate-400 mb-6">{error}</p>
+              <button
+                onClick={fetchMarketStatus}
+                className="px-6 py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-xl text-red-400 font-bold transition-colors flex items-center gap-2 mx-auto"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Destructure data
   const { 
     india_vix, 
     market_breadth, 
@@ -25,11 +105,25 @@ const Analysis = () => {
     nifty50, 
     sector_performance, 
     timestamp 
-  } = ANALYSIS_DATA;
+  } = data;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-slate-200 font-['Outfit'] p-4 lg:p-8 selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-[#050505] text-slate-200 font-['Outfit'] selection:bg-indigo-500/30">
+      <Navbar />
+      <div className="p-4 lg:p-8 pt-24">
       <div className="max-w-[1400px] mx-auto">
+        
+        {/* Refresh Button */}
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={fetchMarketStatus}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            <span className="text-sm font-bold">Refresh Data</span>
+          </button>
+        </div>
         
         {/* 1. TOP SECTION: SYSTEM STATUS & MARKET WEATHER */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
@@ -171,6 +265,7 @@ const Analysis = () => {
           </div>
         </div>
 
+      </div>
       </div>
     </div>
   );

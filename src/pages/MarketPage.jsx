@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWatchlist } from '../context/WatchlistContext';
 import { Star, Search, TrendingUp, TrendingDown, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import Navbar from '../components/Navbar';
 
 const API_BASE_URL = 'http://localhost:5000/api/v1';
 
@@ -67,7 +68,9 @@ const MarketPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-6 lg:p-10 font-['Outfit']">
+    <div className="min-h-screen bg-[#050505] text-white font-['Outfit']">
+      <Navbar />
+      <div className="p-6 lg:p-10 pt-24">
       <div className="max-w-[1200px] mx-auto">
         
         {/* Header with Refresh */}
@@ -161,13 +164,15 @@ const MarketPage = () => {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleWatchlist(stock.symbol);
+                          // Use yahooSymbol if available, otherwise append .NS to symbol
+                          const watchlistSymbol = stock.yahooSymbol || `${stock.symbol}.NS`;
+                          toggleWatchlist(watchlistSymbol);
                         }}
                         className="hover:scale-125 transition-transform"
                       >
                         <Star 
                           size={18} 
-                          className={isFavorite(stock.symbol) ? "text-yellow-500 fill-yellow-500" : "text-gray-700"} 
+                          className={isFavorite(stock.yahooSymbol || `${stock.symbol}.NS`) ? "text-yellow-500 fill-yellow-500" : "text-gray-700"} 
                         />
                       </button>
                     </div>
@@ -219,6 +224,7 @@ const MarketPage = () => {
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, ShoppingCart, DollarSign, BarChart3, Zap, Ale
 import Confetti from 'react-dom-confetti';
 import { useNavigate } from 'react-router-dom';
 import PaperTradingLayout from '../components/PaperTradingLayout';
+import Navbar from '../components/Navbar';
 
 const PaperTrading = () => {
   const navigate = useNavigate();
@@ -127,8 +128,10 @@ const PaperTrading = () => {
   };
 
   return (
+    <>
+    <Navbar />
     <PaperTradingLayout>
-      <div className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8 pt-24">
         <div className="max-w-[1400px] mx-auto">
           <Confetti active={showConfetti} config={confirmedAction === 'buy' ? confettiConfig : {...confettiConfig, stagger: 10}} />
           
@@ -288,6 +291,7 @@ const PaperTrading = () => {
         </div>
       </div>
     </PaperTradingLayout>
+    </>
   );
 };
 

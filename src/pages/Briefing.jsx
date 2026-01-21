@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Target, Zap, MoveLeft, ArrowRight } from "lucide-react";
+import Navbar from '../components/Navbar';
 
 const Briefing = () => {
   const navigate = useNavigate();
@@ -13,7 +14,9 @@ const Briefing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-6 lg:p-16">
+    <div className="min-h-screen bg-[#050505] text-white">
+      <Navbar />
+      <div className="p-6 lg:p-16 pt-24">
       <div className="max-w-[900px] mx-auto">
         <header className="mb-16 border-b border-white/5 pb-10">
           <h1 className="syne text-5xl font-black mb-4 tracking-tighter italic">PROTOCOL_BRIEFING</h1>
@@ -65,6 +68,7 @@ const Briefing = () => {
             ))}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -6,7 +6,6 @@ import StockChart from './pages/StockChart';
 import CalculatorPage from './pages/CalculatorPage';
 import TradingFloor from './pages/TradingFloor';
 import Ledger from './pages/Ledger';
-import Briefing from './pages/Briefing';
 import PaperTrading from './pages/PaperTrading';
 import Portfolio from './pages/Portfolio';
 import TradeHistory from './pages/TradeHistory';
@@ -27,7 +26,7 @@ function App() {
       <Route path='/calculator' element={<CalculatorPage/>}/>
       <Route path='/trading-floor' element={<TradingFloor/>} />
       <Route path="/ledger" element={<Ledger />} />
-      <Route path="/briefing" element={<Briefing />} />
+      <Route path="/analysis" element={<Analysis />} />
       <Route path="/paper-trading" element={<PaperTrading />} />
       <Route path="/portfolio" element={<Portfolio />} />
       <Route path="/trade-history" element={<TradeHistory />} />

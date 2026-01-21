@@ -33,18 +33,14 @@ export default function Navbar() {
           <div className='relative z-10 text-3xl text-white font-bold syne'>gamma</div>
         </Link>
 
-        <div className='urbanist text-md flex items-center gap-12 pt-2 text-white'>
-          <Link to='/' className='hover:cursor-pointer'>Overview</Link>
-          <Link to='/predictions' className='hover:cursor-pointer'>Predictions</Link>
-          <Link to='/' className='hover:cursor-pointer'>Sentiments</Link>
-          <Link to='/chart' className='hover:cursor-pointer'>Compare</Link>
-          <Link to='/calculator' className='hover:cursor-pointer'>Calculator</Link>
-          <Link to='/paper-trading' className='hover:cursor-pointer'>Trading</Link>
-          <Link to='/news' className='hover:cursor-pointer'>News</Link>
-          <Link to='/markets' className='hover:cursor-pointer'>Market</Link>
-          <Link to='/watchlist' className='hover:cursor-pointer'>WatchList</Link>
-
-
+        <div className='urbanist text-md flex items-center gap-10 pt-2 text-white'>
+          <Link to='/predictions' className='hover:text-cyan-400 transition-colors'>Analyze Stock</Link>
+          <Link to='/news' className='hover:text-cyan-400 transition-colors'>News & Trends</Link>
+          <Link to='/calculator' className='hover:text-cyan-400 transition-colors'>Calculator</Link>
+          <Link to='/analysis' className='hover:text-cyan-400 transition-colors'>Market Analysis</Link>
+          <Link to='/paper-trading' className='hover:text-cyan-400 transition-colors'>Paper Trading</Link>
+          <Link to='/markets' className='hover:text-cyan-400 transition-colors'>Markets</Link>
+          <Link to='/watchlist' className='hover:text-cyan-400 transition-colors'>Watchlist</Link>
         </div>
       </div>
 

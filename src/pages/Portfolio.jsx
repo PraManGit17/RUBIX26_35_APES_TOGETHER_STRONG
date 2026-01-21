@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, PieChart, MoveLeft, Trash2 } from 'lucide-rea
 import { useNavigate } from 'react-router-dom';
 import Confetti from 'react-dom-confetti';
 import PaperTradingLayout from '../components/PaperTradingLayout';
+import Navbar from '../components/Navbar';
 
 const Portfolio = () => {
   const navigate = useNavigate();
@@ -41,7 +42,10 @@ const Portfolio = () => {
   };
 
   return (
+    <>
+    <Navbar />
     <PaperTradingLayout>
+      <div className="pt-20">
       <Confetti active={showConfetti} config={confettiConfig} />
 
       <div className="p-6a lg:p-8">
@@ -215,7 +219,9 @@ const Portfolio = () => {
           )}
         </div>
       </div>
+      </div>
     </PaperTradingLayout>
+    </>
   );
 };
 

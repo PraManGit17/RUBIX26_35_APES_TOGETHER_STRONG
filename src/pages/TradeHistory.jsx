@@ -3,6 +3,7 @@ import { useTrade } from '../context/TradeContext';
 import { TrendingUp, TrendingDown, History, MoveLeft, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PaperTradingLayout from '../components/PaperTradingLayout';
+import Navbar from '../components/Navbar';
 
 const TradeHistory = () => {
   const navigate = useNavigate();
@@ -43,7 +44,10 @@ const TradeHistory = () => {
   };
 
   return (
+    <>
+    <Navbar />
     <PaperTradingLayout>
+      <div className="pt-20">
       <div className="p-6 lg:p-8">
         <div className="max-w-[1400px] mx-auto">
           {/* Title */}
@@ -202,7 +206,9 @@ const TradeHistory = () => {
           )}
         </div>
       </div>
+      </div>
     </PaperTradingLayout>
+    </>
   );
 };
 

@@ -2,23 +2,33 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MoveLeft } from "lucide-react";
 import RiskRewardCalculator from '../components/Calculator/RiskRewardCalculator';
+import Navbar from '../components/Navbar';
+import Squares from '../components/Squares';
 
 const CalculatorPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 lg:p-12">
-      {/* Back Button */}
-      <div className="w-full max-w-7xl mx-auto mb-8">
-        <button 
-          onClick={() => navigate('/')} 
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-semibold"
-        >
-          <MoveLeft className="w-4 h-4" /> Return to Home
-        </button>
+    <div className="relative min-h-screen bg-[#050505] text-slate-200 font-['Outfit'] p-4 lg:p-8 overflow-hidden">
+      {/* Squares Background - Fixed to viewport */}
+      <div className="fixed inset-0 z-0">
+        <Squares
+          speed={0.5}
+          squareSize={40}
+          direction="diagonal"
+          borderColor="#271E37"
+          hoverFillColor="#222222"
+        />
       </div>
-
-      <RiskRewardCalculator />
+      
+      {/* Content */}
+      <div className="relative z-10">
+        <Navbar />
+        
+        <div className="max-w-[1500px] mx-auto pt-6">
+          <RiskRewardCalculator />
+        </div>
+      </div>
     </div>
   );
 };

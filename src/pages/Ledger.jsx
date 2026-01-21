@@ -2,6 +2,7 @@ import React from 'react';
 import { useTrade } from '../context/TradeContext';
 import { History, PieChart, TrendingUp, TrendingDown, MoveLeft } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 
 const Ledger = () => {
   const { positions } = useTrade();
@@ -14,7 +15,9 @@ const Ledger = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-8">
+    <div className="min-h-screen bg-[#050505] text-white">
+      <Navbar />
+      <div className="p-8 pt-24">
       <div className="max-w-[1100px] mx-auto">
         <header className="flex justify-between items-end mb-12 border-b border-[#1A1A1A] pb-8">
           <div>
@@ -57,6 +60,7 @@ const Ledger = () => {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

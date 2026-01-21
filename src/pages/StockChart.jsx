@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MoveLeft, TrendingUp, ShieldCheck, History, ArrowUpRight, Target, Activity } from "lucide-react";
 import { initialData } from '../data/mockData';
 import ChartDisplay from '../components/Chart Components/ChartDisplay';
+import Navbar from '../components/Navbar';
 
 const StockChart = () => {
   const navigate = useNavigate();
@@ -20,7 +21,8 @@ const StockChart = () => {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden">
-      <main className="max-w-[1450px] mx-auto p-6 lg:p-12">
+      <Navbar />
+      <main className="max-w-[1450px] mx-auto p-6 lg:p-12 pt-24">
         {/* Header Section */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12 items-end">
           <div className="lg:col-span-2">

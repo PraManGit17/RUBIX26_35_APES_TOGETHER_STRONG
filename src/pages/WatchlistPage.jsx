@@ -11,7 +11,12 @@ const WatchlistPage = () => {
   const navigate = useNavigate();
 
   // Get full data for items in watchlist
-  const favoriteStocks = watchlist.map(symbol => STOCK_MARKET[symbol]).filter(Boolean);
+  // Watchlist now stores Yahoo symbols (with .NS), so we need to match them correctly
+  const favoriteStocks = watchlist.map(yahooSymbol => {
+    // Try to find by yahooSymbol first, or by removing .NS suffix
+    const stock = STOCK_MARKET[yahooSymbol] || STOCK_MARKET[yahooSymbol.replace('.NS', '')];
+    return stock;
+  }).filter(Boolean);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white p-6 lg:p-10 font-['Outfit']">
@@ -60,14 +65,18 @@ const WatchlistPage = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {favoriteStocks.map((stock) => (
+            {favoriteStocks.map((stock, index) => {
+              // Get the corresponding Yahoo symbol from watchlist
+              const yahooSymbol = watchlist[favoriteStocks.indexOf(stock)];
+              
+              return (
               <div 
-                key={stock.symbol}
+                key={yahooSymbol || stock.symbol}
                 className="bg-[#0D0D0D] border border-[#1A1A1A] p-5 rounded-2xl flex items-center justify-between group hover:border-cyan-500/30 transition-all"
               >
                 <div className="flex items-center gap-4">
                   <button 
-                    onClick={() => toggleWatchlist(stock.symbol)}
+                    onClick={() => toggleWatchlist(yahooSymbol || stock.yahooSymbol || `${stock.symbol}.NS`)}
                     className="text-yellow-500 hover:scale-110 transition-transform"
                   >
                     <Star size={20} fill="#eab308" />
@@ -93,7 +102,8 @@ const WatchlistPage = () => {
                   </button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@ import { X, TrendingUp, TrendingDown, ShoppingCart, DollarSign, AlertCircle, Arr
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ComposedChart, Bar, Cell } from 'recharts';
 import Confetti from 'react-dom-confetti';
 import Candlestick from '../components/Candlestick';
+import Navbar from '../components/Navbar';
 
 const API_BASE_URL = 'http://localhost:5000/api/v1';
 
@@ -202,7 +203,9 @@ const StockDetail = () => {
   const priceChangePercent = ((priceChange / stock.open) * 100).toFixed(2);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-6 lg:p-10 font-['Outfit']">
+    <div className="min-h-screen bg-[#050505] text-white font-['Outfit']">
+      <Navbar />
+      <div className="p-6 lg:p-10 pt-24">
       <Confetti active={showConfetti} config={confirmedAction === 'buy' ? confettiConfig : {...confettiConfig, stagger: 10}} />
       
       <div className="max-w-[1600px] mx-auto">
@@ -475,6 +478,7 @@ const StockDetail = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
